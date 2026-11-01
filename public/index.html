@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>SteVal — 3D printed projects, better prices</title>
+<meta name="description" content="Original 3D printed projects. Same designs you find on the big marketplaces, at a lower price.">
+<meta name="theme-color" content="#0e0f13">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" href="/icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/icons/icon-192.png">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <a class="logo" href="/"><i>S</i><span>Ste<b>Val</b></span></a>
+    <nav class="links">
+      <a href="#shop">Shop</a>
+      <a href="#why">Why SteVal</a>
+    </nav>
+    <div style="display:flex;gap:10px;align-items:center">
+      <button class="btn ghost" id="installBtn" hidden>⬇ Install app</button>
+      <button class="btn ghost cart-btn" id="cartBtn">🛒 Cart<span class="count" id="cartCount">0</span></button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="hero">
+    <span class="pill">🖨️ Printed layer by layer, shipped to you</span>
+    <h1>Great 3D prints, <span>cheaper</span> than the big marketplaces</h1>
+    <p>Same designs you see on famous stores — buy them directly from us and get an exclusive discount.</p>
+    <a class="btn primary" href="#shop">Browse the shop</a>
+    <div class="perks" id="why">
+      <div class="perk"><b>💸 Direct discount</b><span>Every product shows the marketplace price next to ours.</span></div>
+      <div class="perk"><b>🎨 Made to order</b><span>Printed fresh in the colour you like.</span></div>
+      <div class="perk"><b>✅ Quality checked</b><span>Each piece is inspected before it ships.</span></div>
+    </div>
+  </section>
+
+  <section id="shop">
+    <div class="toolbar">
+      <h2>Shop</h2>
+      <input class="search" id="search" type="search" placeholder="Search products…">
+    </div>
+    <div class="chips" id="chips" style="margin-bottom:18px"></div>
+    <div class="grid" id="grid"></div>
+  </section>
+</main>
+
+<footer class="site"><div class="wrap">© <span id="year"></span> SteVal · 3D printed with ❤️</div></footer>
+
+<div class="overlay" id="overlay"></div>
+
+<!-- product modal -->
+<div class="modal" id="modal" role="dialog" aria-modal="true">
+  <button class="close" id="modalClose" aria-label="Close">✕</button>
+  <div class="inner" id="modalBody"></div>
+</div>
+
+<!-- cart drawer -->
+<aside class="drawer" id="drawer" aria-label="Cart">
+  <header><b style="font-size:1.1rem">Your cart</b><button class="close" style="position:static" id="drawerClose" aria-label="Close">✕</button></header>
+  <div class="items" id="cartItems"></div>
+  <footer id="cartFoot">
+    <div class="total"><span>Total</span><span id="cartTotal"></span></div>
+    <input class="f" id="oName" placeholder="Your name *" autocomplete="name">
+    <input class="f" id="oEmail" type="email" placeholder="Email *" autocomplete="email">
+    <input class="f" id="oPhone" placeholder="Phone (optional)" autocomplete="tel">
+    <textarea class="f" id="oNote" placeholder="Colour, size, delivery address, notes…"></textarea>
+    <button class="btn primary" id="sendOrder">Send order request</button>
+    <small style="color:var(--muted)">We'll contact you to confirm and arrange payment & shipping.</small>
+  </footer>
+</aside>
+
+<div class="toast" id="toast"></div>
+<script src="/app.js"></script>
+</body>
+</html>

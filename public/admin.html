@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>SteVal Admin</title>
+<link rel="icon" href="/icons/icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <a class="logo" href="/"><i>S</i><span>Ste<b>Val</b> <small style="color:var(--muted);font-weight:500">admin</small></span></a>
+  <div style="display:flex;gap:8px"><a class="btn ghost sm" href="/">View store</a><button class="btn ghost sm" id="logout" hidden>Log out</button></div>
+</div></header>
+
+<main class="wrap">
+  <!-- login -->
+  <section class="panel login" id="loginBox">
+    <h2>Admin login</h2>
+    <form class="form" id="loginForm">
+      <input class="f" type="password" id="pw" placeholder="Password" autocomplete="current-password" required>
+      <button class="btn primary">Log in</button>
+    </form>
+  </section>
+
+  <!-- dashboard -->
+  <section class="admin" id="dash" hidden>
+    <div class="panel">
+      <h2 id="formTitle">Add product</h2>
+      <form class="form" id="pform">
+        <label>Title *</label><input class="f" id="title" required maxlength="120">
+        <label>Description</label><textarea class="f" id="description" rows="5" maxlength="4000" placeholder="Material, size, print time, colours…"></textarea>
+        <div class="row2">
+          <div><label>Your price (€) *</label><input class="f" id="price" inputmode="decimal" required></div>
+          <div><label>Marketplace price (€)</label><input class="f" id="marketplacePrice" inputmode="decimal"></div>
+        </div>
+        <div class="row2">
+          <div><label>Marketplace name</label><input class="f" id="marketplaceName" placeholder="Etsy, Amazon…"></div>
+          <div><label>Category</label><input class="f" id="category" placeholder="Statuettes, Sandals…"></div>
+        </div>
+        <label>Marketplace link</label><input class="f" id="marketplaceUrl" type="url" placeholder="https://…">
+        <label>Photos (max 8, 8MB each)</label>
+        <div class="drop" id="drop">📷 Click to choose photos<input type="file" id="files" accept="image/*" multiple hidden></div>
+        <div class="previews" id="previews"></div>
+        <div style="display:flex;gap:8px">
+          <button class="btn primary" style="flex:1" id="saveBtn">Save product</button>
+          <button type="button" class="btn ghost" id="cancelEdit" hidden>Cancel</button>
+        </div>
+      </form>
+    </div>
+
+    <div class="panel">
+      <div class="tabs">
+        <button class="chip active" id="tabP">Products</button>
+        <button class="chip" id="tabO">Orders <span id="newCount"></span></button>
+      </div>
+      <div class="plist" id="plist"></div>
+      <div class="plist" id="olist" hidden></div>
+    </div>
+  </section>
+</main>
+<div class="toast" id="toast"></div>
+<script src="/admin.js"></script>
+</body>
+</html>
