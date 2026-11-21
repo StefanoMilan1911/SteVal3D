@@ -3,7 +3,7 @@
 const I18N = {
   it: {
     pageTitle: 'SteVal — Progetti stampati in 3D, a prezzi migliori',
-    navShop: 'Negozio', install: '⬇ Installa app', cart: 'Carrello',
+    navShop: 'Negozio', install: 'Installa app', cart: 'Carrello',
     pill: '🖨️ Stampato strato dopo strato, spedito a casa tua',
     heroH1: 'Ottime stampe 3D, <span>più economiche</span> dei grandi marketplace',
     heroP: 'Gli stessi modelli che vedi sui grandi store: acquistali direttamente da noi con uno sconto esclusivo.',
@@ -53,7 +53,7 @@ const I18N = {
   },
   en: {
     pageTitle: 'SteVal — 3D printed projects, better prices',
-    navShop: 'Shop', install: '⬇ Install app', cart: 'Cart',
+    navShop: 'Shop', install: 'Install app', cart: 'Cart',
     pill: '🖨️ Printed layer by layer, shipped to you',
     heroH1: 'Great 3D prints, <span>cheaper</span> than the big marketplaces',
     heroP: 'Same designs you see on famous stores — buy them directly from us and get an exclusive discount.',

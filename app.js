@@ -155,6 +155,7 @@ async function refreshUser() {
 }
 function updateAccountUI() {
   $('#accLabel').textContent = user ? firstName() : t('account');
+  $('#accBtn').setAttribute('aria-label', t('account')); $('#cartBtn').setAttribute('aria-label', t('cart')); $('#installBtn').setAttribute('aria-label', t('install'));
   if (user) { // pre-fill the order form
     if (!$('#oEmail').value) $('#oEmail').value = user.email || '';
     if (!$('#oName').value) $('#oName').value = user.user_metadata?.full_name || '';
