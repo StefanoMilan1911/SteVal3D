@@ -2,6 +2,6 @@
 // (Supabase → Project Settings → API). La "anon key" è pubblica per design:
 // la sicurezza la fanno le regole (RLS) nel file supabase.sql.
 window.STEVAL = {
-  SUPABASE_URL: "",       // es. https://abcdxyz.supabase.co
-  SUPABASE_ANON_KEY: ""   // la chiave "anon public" (NON la service_role!)
+  SUPABASE_URL: "https://ivxziysrighyjasuatae.supabase.co",       
+  SUPABASE_ANON_KEY: "sb_publishable_90ToCa_hWiH4yUCgcD3-FA_W2C82dPT"   
 };
