@@ -134,3 +134,10 @@ footer.site{border-top:1px solid var(--line);padding:30px 0;color:var(--muted);t
   .info{padding:10px 22px 26px}
   .admin{grid-template-columns:1fr}
 }
+
+/* language switch */
+.langsw{display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.langsw button{background:var(--panel2);border:0;padding:8px 11px;font-weight:800;font-size:.8rem;color:var(--muted);cursor:pointer;letter-spacing:.04em}
+.langsw button.on{background:rgba(255,106,26,.22);color:var(--text)}
+.langsw button:hover{color:var(--text)}
+.info .prices{margin-top:6px}

@@ -1,6 +1,6 @@
 // SteVal service worker: network first, cache as offline fallback (same-origin only)
-const CACHE = 'steval-v2';
-const SHELL = ['./', 'style.css', 'app.js', 'config.js', 'manifest.webmanifest', 'icons/icon.svg'];
+const CACHE = 'steval-v3';
+const SHELL = ['./', 'style.css', 'app.js', 'config.js', 'i18n.js', 'manifest.webmanifest', 'icons/icon.svg'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));

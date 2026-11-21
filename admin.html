@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="it">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -8,51 +8,57 @@
 <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="style.css">
 </head>
-<body>
+<body data-title="a_title">
 <header class="top"><div class="wrap">
-  <a class="logo" href="./"><i>S</i><span>Ste<b>Val</b> <small style="color:var(--muted);font-weight:500">admin</small></span></a>
-  <div style="display:flex;gap:8px"><a class="btn ghost sm" href="./">View store</a><button class="btn ghost sm" id="logout" hidden>Log out</button></div>
+  <a class="logo" href="./"><i>S</i><span>Ste<b>Val</b> <small style="color:var(--muted);font-weight:500" data-i18n="a_admin"></small></span></a>
+  <div style="display:flex;gap:8px;align-items:center">
+    <div class="langsw" role="group" aria-label="Language"><button data-lang="it">IT</button><button data-lang="en">EN</button></div>
+    <a class="btn ghost sm" href="./" data-i18n="a_viewStore"></a>
+    <button class="btn ghost sm" id="logout" data-i18n="a_logout" hidden></button>
+  </div>
 </div></header>
 
 <main class="wrap">
   <section class="panel login" id="loginBox">
-    <h2>Admin login</h2>
+    <h2 data-i18n="a_loginTitle"></h2>
     <form class="form" id="loginForm">
-      <input class="f" type="email" id="email" placeholder="Email" autocomplete="username" required>
-      <input class="f" type="password" id="pw" placeholder="Password" autocomplete="current-password" required>
-      <button class="btn primary">Log in</button>
+      <input class="f" type="email" id="email" data-i18n-ph="a_emailPh" autocomplete="username" required>
+      <input class="f" type="password" id="pw" data-i18n-ph="a_pwPh" autocomplete="current-password" required>
+      <button class="btn primary" data-i18n="a_login"></button>
     </form>
   </section>
 
   <section class="admin" id="dash" hidden>
     <div class="panel">
-      <h2 id="formTitle">Add product</h2>
+      <h2 id="formTitle"></h2>
       <form class="form" id="pform">
-        <label>Title *</label><input class="f" id="title" required maxlength="120">
-        <label>Description</label><textarea class="f" id="description" rows="5" maxlength="4000" placeholder="Material, size, print time, colours…"></textarea>
+        <label data-i18n="a_fTitle"></label><input class="f" id="title" required maxlength="120">
+        <label data-i18n="a_fTitleEn"></label><input class="f" id="titleEn" maxlength="120">
+        <label data-i18n="a_fDesc"></label><textarea class="f" id="description" rows="4" maxlength="4000" data-i18n-ph="a_descPh"></textarea>
+        <label data-i18n="a_fDescEn"></label><textarea class="f" id="descriptionEn" rows="4" maxlength="4000"></textarea>
         <div class="row2">
-          <div><label>Your price (€) *</label><input class="f" id="price" inputmode="decimal" required></div>
-          <div><label>Marketplace price (€)</label><input class="f" id="marketplacePrice" inputmode="decimal"></div>
+          <div><label data-i18n="a_fPrice"></label><input class="f" id="price" inputmode="decimal" required></div>
+          <div><label data-i18n="a_fMarketPrice"></label><input class="f" id="marketplacePrice" inputmode="decimal"></div>
         </div>
         <div class="row2">
-          <div><label>Marketplace name</label><input class="f" id="marketplaceName" placeholder="Etsy, Amazon…" maxlength="40"></div>
-          <div><label>Category</label><input class="f" id="category" placeholder="Statuettes, Sandals…" maxlength="40"></div>
+          <div><label data-i18n="a_fMarketName"></label><input class="f" id="marketplaceName" placeholder="Etsy, Amazon…" maxlength="40"></div>
+          <div><label data-i18n="a_fCategory"></label><input class="f" id="category" placeholder="Statuette, Sandali…" maxlength="40"></div>
         </div>
-        <label>Marketplace link</label><input class="f" id="marketplaceUrl" type="url" placeholder="https://…">
-        <label>Photos (max 8, 8MB each)</label>
-        <div class="drop" id="drop">📷 Click to choose photos<input type="file" id="files" accept="image/jpeg,image/png,image/webp,image/gif" multiple hidden></div>
+        <label data-i18n="a_fMarketLink"></label><input class="f" id="marketplaceUrl" type="url" placeholder="https://…">
+        <label data-i18n="a_fPhotos"></label>
+        <div class="drop" id="drop"><span data-i18n="a_choose"></span><input type="file" id="files" accept="image/jpeg,image/png,image/webp,image/gif" multiple hidden></div>
         <div class="previews" id="previews"></div>
         <div style="display:flex;gap:8px">
-          <button class="btn primary" style="flex:1" id="saveBtn">Save product</button>
-          <button type="button" class="btn ghost" id="cancelEdit" hidden>Cancel</button>
+          <button class="btn primary" style="flex:1" id="saveBtn" data-i18n="a_save"></button>
+          <button type="button" class="btn ghost" id="cancelEdit" data-i18n="a_cancel" hidden></button>
         </div>
       </form>
     </div>
 
     <div class="panel">
       <div class="tabs">
-        <button class="chip active" id="tabP">Products</button>
-        <button class="chip" id="tabO">Orders <span id="newCount"></span></button>
+        <button class="chip active" id="tabP" data-i18n="a_tabP"></button>
+        <button class="chip" id="tabO"><span data-i18n="a_tabO"></span> <span id="newCount"></span></button>
       </div>
       <div class="plist" id="plist"></div>
       <div class="plist" id="olist" hidden></div>
@@ -62,6 +68,7 @@
 <div class="toast" id="toast"></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js"></script>
+<script src="i18n.js"></script>
 <script src="admin.js"></script>
 </body>
 </html>
