@@ -14,13 +14,30 @@ try { cart = JSON.parse(localStorage.getItem('steval_cart') || '[]'); } catch {}
 let cat = 'All', query = '', currentId = null;
 
 const saveCart = () => { try { localStorage.setItem('steval_cart', JSON.stringify(cart)); } catch {} };
-const discount = (p) => (p.marketplacePrice > p.price && p.price > 0 ? Math.round((1 - p.price / p.marketplacePrice) * 100) : 0);
+const discount = (p, price = p.price) => (p.marketplacePrice > price && price > 0 ? Math.round((1 - price / p.marketplacePrice) * 100) : 0);
 const norm = (r) => ({
   id: r.id, title: r.title, titleEn: r.title_en || '', description: r.description || '', descEn: r.description_en || '',
   category: r.category || 'General',
   price: Number(r.price) || 0, marketplacePrice: Number(r.marketplace_price) || 0,
   marketplaceName: r.marketplace_name || '', marketplaceUrl: safeUrl(r.marketplace_url), images: r.images || [],
+  variants: Array.isArray(r.variants) ? r.variants.filter((g) => g && g.name && Array.isArray(g.options) && g.options.length) : [],
 });
+
+// ---------- variants (e.g. Colour: Black / White, Size: S / L) ----------
+// A product has groups: [{name, name_en, options:[{label, label_en, price_delta}]}]. The cart stores the chosen label per group name.
+const gname = (g) => (LANG === 'en' && g.name_en ? g.name_en : g.name);
+const olabel = (o) => (LANG === 'en' && o.label_en ? o.label_en : o.label);
+const delta = (o) => Number(o.price_delta) || 0;
+const defaultOpts = (p) => Object.fromEntries(p.variants.map((g) => [g.name, g.options[0].label]));
+const validOpts = (p, opts) => { // null if the saved choice no longer exists on the product
+  const out = {};
+  for (const g of p.variants) { const l = opts && opts[g.name]; if (!g.options.some((o) => o.label === l)) return null; out[g.name] = l; }
+  return out;
+};
+const unitPrice = (p, opts) => p.price + p.variants.reduce((s, g) => { const o = g.options.find((x) => x.label === (opts || {})[g.name]); return s + (o ? delta(o) : 0); }, 0);
+const lineKey = (l) => l.id + '|' + JSON.stringify(Object.keys(l.opts || {}).sort().map((k) => [k, l.opts[k]]));
+const optText = (p, opts) => p.variants.map((g) => { const o = g.options.find((x) => x.label === (opts || {})[g.name]); return o ? `${gname(g)}: ${olabel(o)}` : null; }).filter(Boolean).join(' · ');
+const optPlain = (opts) => Object.entries(opts || {}).map(([k, v]) => `${k}: ${v}`).join(', '); // for saved orders
 // show the English text when the site is in English and an English version exists
 const tr = (p) => ({
   title: LANG === 'en' && p.titleEn ? p.titleEn : p.title,
@@ -37,7 +54,9 @@ async function load() {
   const { data, error } = await sb.from('products').select('*').order('created_at', { ascending: false });
   if (error) { console.error(error); toast(t('errLoad')); }
   products = (data || []).map(norm);
-  cart = cart.filter((l) => products.some((p) => p.id === l.id));
+  // drop cart lines whose product or chosen option no longer exists
+  cart = cart.map((l) => { const p = products.find((x) => x.id === l.id); const o = p && validOpts(p, l.opts); return o ? { id: l.id, qty: l.qty, opts: o } : null; }).filter(Boolean);
+  saveCart();
   renderChips(); renderGrid(); renderCart();
 }
 
@@ -70,11 +89,20 @@ function renderGrid() {
 }
 
 // ---------- product modal ----------
-function openProduct(id) {
+let modalSel = {}, modalSelId = null;
+function priceBlock(p) {
+  const unit = unitPrice(p, modalSel), d = discount(p, unit);
+  return `<div class="prices"><span class="price" style="font-size:1.7rem">${eur(unit)}</span>${d ? `<span class="old">${eur(p.marketplacePrice)}</span><span class="badge" style="position:static">-${d}%</span>` : ''}</div>
+      ${d && p.marketplaceName ? `<div class="compare">${t('compare', { name: p.marketplaceName, price: eur(p.marketplacePrice), save: eur(p.marketplacePrice - unit) })}</div>` : ''}`;
+}
+function openProduct(id, keepSel) {
   const p = products.find((x) => x.id === id); if (!p) return;
   currentId = id;
-  const d = discount(p), x = tr(p), imgs = p.images;
+  if (!keepSel || modalSelId !== id) { modalSel = defaultOpts(p); modalSelId = id; }
+  const x = tr(p), imgs = p.images;
   const mname = p.marketplaceName || t('marketplace');
+  const groups = p.variants.map((g, gi) => `<div class="optgroup"><span class="lab">${esc(gname(g))}</span><div class="opts">${g.options.map((o) =>
+    `<button type="button" class="opt ${modalSel[g.name] === o.label ? 'on' : ''}" data-g="${gi}" data-l="${esc(o.label)}">${esc(olabel(o))}${delta(o) ? `<small>${delta(o) > 0 ? '+' : ''}${eur(delta(o))}</small>` : ''}</button>`).join('')}</div></div>`).join('');
   $('#modalBody').innerHTML = `
     <div class="gallery">
       <div class="main">${imgs[0] ? `<img id="mainImg" src="${esc(imgs[0])}" alt="${esc(x.title)}">` : '<div class="noimg">🖨️</div>'}</div>
@@ -83,9 +111,9 @@ function openProduct(id) {
     <div class="info">
       <span class="cat" style="color:var(--accent2);font-weight:700;font-size:.8rem;text-transform:uppercase">${esc(p.category)}</span>
       <h2>${esc(x.title)}</h2>
-      <div class="prices"><span class="price" style="font-size:1.7rem">${eur(p.price)}</span>${d ? `<span class="old">${eur(p.marketplacePrice)}</span><span class="badge" style="position:static">-${d}%</span>` : ''}</div>
-      ${d && p.marketplaceName ? `<div class="compare">${t('compare', { name: p.marketplaceName, price: eur(p.marketplacePrice), save: eur(p.marketplacePrice - p.price) })}</div>` : ''}
+      <div id="priceBlock" style="display:flex;flex-direction:column;gap:12px">${priceBlock(p)}</div>
       <p class="desc">${esc(x.description)}</p>
+      ${groups}
       <button class="btn primary" id="addBtn">${esc(t('addToCart'))}</button>
       ${p.marketplaceUrl ? `<a class="btn ghost" href="${esc(p.marketplaceUrl)}" target="_blank" rel="noopener noreferrer">${esc(t('alsoOn', { name: mname }).replace(/&amp;/g, '&'))}</a>` : ''}
     </div>`;
@@ -93,29 +121,36 @@ function openProduct(id) {
     $('#mainImg').src = th.dataset.u;
     $('#modalBody').querySelectorAll('.thumbs img').forEach((y) => y.classList.toggle('on', y === th));
   });
-  $('#addBtn').onclick = () => { addToCart(p.id); closeAll(); openCart(); };
+  $('#modalBody').querySelectorAll('.opt').forEach((b) => b.onclick = () => {
+    const g = p.variants[+b.dataset.g];
+    modalSel[g.name] = b.dataset.l;
+    b.parentElement.querySelectorAll('.opt').forEach((y) => y.classList.toggle('on', y === b));
+    $('#priceBlock').innerHTML = priceBlock(p);
+  });
+  $('#addBtn').onclick = () => { addToCart(p.id, { ...modalSel }); closeAll(); openCart(); };
   $('#overlay').classList.add('open'); $('#modal').classList.add('open');
 }
 
 // ---------- cart ----------
-function addToCart(id) {
-  const l = cart.find((x) => x.id === id);
-  if (l) l.qty = Math.min(l.qty + 1, 99); else cart.push({ id, qty: 1 });
+function addToCart(id, opts) {
+  const nl = { id, qty: 1, opts: opts || {} };
+  const l = cart.find((x) => lineKey(x) === lineKey(nl));
+  if (l) l.qty = Math.min(l.qty + 1, 99); else cart.push(nl);
   saveCart(); renderCart(); toast(t('added'));
 }
 function renderCart() {
   const lines = cart.map((l) => ({ ...l, p: products.find((p) => p.id === l.id) })).filter((l) => l.p);
   const count = lines.reduce((s, l) => s + l.qty, 0);
   $('#cartCount').textContent = count; $('#cartCount').style.display = count ? 'grid' : 'none';
-  $('#cartTotal').textContent = eur(lines.reduce((s, l) => s + l.p.price * l.qty, 0));
+  $('#cartTotal').textContent = eur(lines.reduce((s, l) => s + unitPrice(l.p, l.opts) * l.qty, 0));
   $('#cartFoot').style.display = lines.length ? 'flex' : 'none';
   if (!lines.length) { $('#cartItems').innerHTML = `<p style="color:var(--muted);text-align:center;margin-top:40px">${esc(t('cartEmpty'))}</p>`; return; }
   $('#cartItems').innerHTML = lines.map((l) => `<div class="line">
       ${l.p.images[0] ? `<img src="${esc(l.p.images[0])}" alt="">` : '<div class="noimg">🖨️</div>'}
-      <div><b>${esc(tr(l.p).title)}</b><div class="qty"><button data-a="-" data-id="${esc(l.id)}">−</button><span>${l.qty}</span><button data-a="+" data-id="${esc(l.id)}">+</button></div></div>
-      <b>${eur(l.p.price * l.qty)}</b></div>`).join('');
+      <div><b>${esc(tr(l.p).title)}</b>${l.p.variants.length ? `<div class="optline">${esc(optText(l.p, l.opts))}</div>` : ''}<div class="qty"><button data-a="-" data-k="${esc(lineKey(l))}">−</button><span>${l.qty}</span><button data-a="+" data-k="${esc(lineKey(l))}">+</button></div></div>
+      <b>${eur(unitPrice(l.p, l.opts) * l.qty)}</b></div>`).join('');
   $('#cartItems').querySelectorAll('.qty button').forEach((b) => b.onclick = () => {
-    const l = cart.find((x) => x.id === b.dataset.id);
+    const l = cart.find((x) => lineKey(x) === b.dataset.k);
     l.qty = Math.min(l.qty + (b.dataset.a === '+' ? 1 : -1), 99);
     if (l.qty <= 0) cart = cart.filter((x) => x !== l);
     saveCart(); renderCart();
@@ -132,7 +167,7 @@ $('#sendOrder').onclick = async () => {
   const btn = $('#sendOrder'); btn.disabled = true;
   const { error } = await sb.from('orders').insert({
     name, email, phone: $('#oPhone').value.trim(), note: $('#oNote').value.trim(),
-    items: cart.map((l) => ({ id: l.id, qty: l.qty })),
+    items: cart.map((l) => ({ id: l.id, qty: l.qty, opts: l.opts || {} })),
   });
   btn.disabled = false;
   if (error) { console.error(error); return toast(t('errSend')); }
@@ -253,7 +288,7 @@ async function loadMyOrders() {
   const loc = LANG === 'it' ? 'it-IT' : 'en-GB';
   el.innerHTML = data.length ? data.map((o) => `<div class="myorder">
       <div><b>${eur(o.total)}</b> · <span class="st">${esc(t('st_' + o.status))}</span></div>
-      <div class="meta">${new Date(o.created_at).toLocaleDateString(loc)} — ${(o.items || []).map((i) => `${esc(i.qty)}× ${esc(i.title)}`).join(', ')}</div>
+      <div class="meta">${new Date(o.created_at).toLocaleDateString(loc)} — ${(o.items || []).map((i) => `${esc(i.qty)}× ${esc(i.title)}${i.opts && Object.keys(i.opts).length ? ` (${esc(optPlain(i.opts))})` : ''}`).join(', ')}</div>
     </div>`).join('') : `<p style="color:var(--muted)">${esc(t('noMyOrders'))}</p>`;
 }
 
@@ -272,7 +307,7 @@ $('#search').oninput = (e) => { query = e.target.value.toLowerCase(); renderGrid
 // re-draw everything when the language changes
 document.addEventListener('langchange', () => {
   renderChips(); renderGrid(); renderCart(); updateAccountUI();
-  if (currentId && $('#modal').classList.contains('open')) openProduct(currentId);
+  if (currentId && $('#modal').classList.contains('open')) openProduct(currentId, true);
 });
 
 // ---------- PWA ----------

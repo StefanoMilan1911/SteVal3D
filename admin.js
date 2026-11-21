@@ -95,14 +95,65 @@ function renderPreviews() {
   });
 }
 
+// ---------- variants editor ----------
+let variants = [];
+const MAXG = 4, MAXO = 12;
+const optPlain = (o) => Object.entries(o || {}).map(([k, v]) => `${k}: ${v}`).join(', ');
+function renderVariants() {
+  $('#variants').innerHTML = variants.map((g, gi) => `<div class="vgroup">
+    <div class="vhead">
+      <input class="f" data-g="${gi}" data-f="name" placeholder="${esc(t('a_gName'))}" value="${esc(g.name)}" maxlength="30">
+      <input class="f" data-g="${gi}" data-f="name_en" placeholder="${esc(t('a_gNameEn'))}" value="${esc(g.name_en || '')}" maxlength="30">
+      <button type="button" class="xbtn" data-delg="${gi}" aria-label="remove">✕</button>
+    </div>
+    ${g.options.map((o, oi) => `<div class="vopt">
+      <input class="f" data-g="${gi}" data-o="${oi}" data-f="label" placeholder="${esc(t('a_oLabel'))}" value="${esc(o.label)}" maxlength="30">
+      <input class="f" data-g="${gi}" data-o="${oi}" data-f="label_en" placeholder="${esc(t('a_oLabelEn'))}" value="${esc(o.label_en || '')}" maxlength="30">
+      <input class="f" data-g="${gi}" data-o="${oi}" data-f="price_delta" inputmode="decimal" placeholder="${esc(t('a_oDelta'))}" value="${o.price_delta ? esc(o.price_delta) : ''}">
+      <button type="button" class="xbtn" data-delo="${gi}.${oi}" aria-label="remove">✕</button></div>`).join('')}
+    ${g.options.length < MAXO ? `<button type="button" class="btn ghost sm" data-addo="${gi}">${esc(t('a_addOpt'))}</button>` : ''}
+  </div>`).join('');
+  $('#addGroup').hidden = variants.length >= MAXG;
+  $('#variants').querySelectorAll('input[data-f]').forEach((i) => i.oninput = () => {
+    const g = variants[+i.dataset.g];
+    if (i.dataset.o === undefined) g[i.dataset.f] = i.value; else g.options[+i.dataset.o][i.dataset.f] = i.value;
+  });
+  $('#variants').querySelectorAll('[data-delg]').forEach((b) => b.onclick = () => { variants.splice(+b.dataset.delg, 1); renderVariants(); });
+  $('#variants').querySelectorAll('[data-delo]').forEach((b) => b.onclick = () => { const [gi, oi] = b.dataset.delo.split('.').map(Number); variants[gi].options.splice(oi, 1); renderVariants(); });
+  $('#variants').querySelectorAll('[data-addo]').forEach((b) => b.onclick = () => { variants[+b.dataset.addo].options.push({ label: '', label_en: '', price_delta: '' }); renderVariants(); });
+}
+$('#addGroup').onclick = () => { variants.push({ name: '', name_en: '', options: [{ label: '', label_en: '', price_delta: '' }] }); renderVariants(); };
+
+// returns the cleaned list, or null if something is wrong (missing name, no options, duplicates)
+function cleanVariants() {
+  const out = [], names = new Set();
+  for (const g of variants) {
+    const name = (g.name || '').trim();
+    if (!name && g.options.every((o) => !(o.label || '').trim())) continue; // ignore empty groups
+    if (!name || names.has(name)) return null;
+    names.add(name);
+    const opts = [], labels = new Set();
+    for (const o of g.options) {
+      const label = (o.label || '').trim();
+      if (!label) continue;
+      if (labels.has(label)) return null;
+      labels.add(label);
+      opts.push({ label, label_en: (o.label_en || '').trim(), price_delta: Math.round(num(o.price_delta) * 100) / 100 });
+    }
+    if (!opts.length) return null;
+    out.push({ name, name_en: (g.name_en || '').trim(), options: opts });
+  }
+  return out;
+}
+
 const FIELDS = {
   title: 'title', titleEn: 'title_en', description: 'description', descriptionEn: 'description_en',
   price: 'price', marketplacePrice: 'marketplace_price', marketplaceName: 'marketplace_name',
   category: 'category', marketplaceUrl: 'marketplace_url',
 };
 function resetForm() {
-  editing = null; newFiles = []; removeImages = [];
-  $('#pform').reset(); setFormTitle(); $('#cancelEdit').hidden = true; renderPreviews();
+  editing = null; newFiles = []; removeImages = []; variants = [];
+  $('#pform').reset(); setFormTitle(); $('#cancelEdit').hidden = true; renderPreviews(); renderVariants();
 }
 $('#cancelEdit').onclick = resetForm;
 
@@ -112,6 +163,8 @@ $('#pform').onsubmit = async (e) => {
   if (total > 8) return toast(t('a_errMax'));
   const url = $('#marketplaceUrl').value.trim();
   if (url && !/^https?:\/\//i.test(url)) return toast(t('a_errUrl'));
+  const vars = cleanVariants();
+  if (vars === null) return toast(t('a_errVar'));
   $('#saveBtn').disabled = true;
   try {
     const uploaded = [];
@@ -129,6 +182,7 @@ $('#pform').onsubmit = async (e) => {
       price: num($('#price').value), marketplace_price: num($('#marketplacePrice').value),
       marketplace_name: $('#marketplaceName').value.trim(), marketplace_url: url,
       images: [...kept, ...uploaded],
+      variants: vars,
     };
     const q = editing ? sb.from('products').update(row).eq('id', editing.id) : sb.from('products').insert(row);
     const { error } = await q;
@@ -150,7 +204,8 @@ function renderProducts() {
   $('#plist').querySelectorAll('[data-e]').forEach((b) => b.onclick = () => {
     editing = products.find((p) => p.id === b.dataset.e); newFiles = []; removeImages = [];
     for (const [k, col] of Object.entries(FIELDS)) $('#' + k).value = editing[col] ?? '';
-    setFormTitle(); $('#cancelEdit').hidden = false; renderPreviews();
+    variants = JSON.parse(JSON.stringify(editing.variants || []));
+    setFormTitle(); $('#cancelEdit').hidden = false; renderPreviews(); renderVariants();
     window.scrollTo({ top: 0, behavior: 'smooth' });
   });
   $('#plist').querySelectorAll('[data-d]').forEach((b) => b.onclick = async () => {
@@ -172,7 +227,7 @@ function renderOrders() {
   $('#olist').innerHTML = orders.length ? orders.map((o) => `<div class="order">
       <div class="h"><b>${esc(o.name)}</b><span style="color:var(--muted)">${new Date(o.created_at).toLocaleString(loc)}</span></div>
       <div><a href="mailto:${esc(o.email)}" style="color:var(--accent2)">${esc(o.email)}</a>${o.phone ? ' · ' + esc(o.phone) : ''}</div>
-      <div>${(o.items || []).map((i) => `${esc(i.qty)}× ${esc(i.title)}`).join(', ')}</div>
+      <div>${(o.items || []).map((i) => `${esc(i.qty)}× ${esc(i.title)}${i.opts && Object.keys(i.opts).length ? ` (${esc(optPlain(i.opts))})` : ''}`).join(', ')}</div>
       ${o.note ? `<div style="color:var(--muted);white-space:pre-wrap">${esc(o.note)}</div>` : ''}
       <div class="h"><b>${eur(o.total)}</b>
         <select class="f" style="width:auto" data-o="${esc(o.id)}">${STATUSES.map((s) => `<option value="${s}" ${s === o.status ? 'selected' : ''}>${esc(t('st_' + s))}</option>`).join('')}</select></div>
@@ -186,6 +241,6 @@ function renderOrders() {
 $('#tabP').onclick = () => { $('#tabP').classList.add('active'); $('#tabO').classList.remove('active'); $('#plist').hidden = false; $('#olist').hidden = true; };
 $('#tabO').onclick = () => { $('#tabO').classList.add('active'); $('#tabP').classList.remove('active'); $('#plist').hidden = true; $('#olist').hidden = false; };
 
-document.addEventListener('langchange', () => { setFormTitle(); renderProducts(); renderOrders(); });
-setFormTitle();
+document.addEventListener('langchange', () => { setFormTitle(); renderProducts(); renderOrders(); renderVariants(); });
+setFormTitle(); renderVariants();
 start();

@@ -49,6 +49,10 @@ const I18N = {
     a_errMax: 'Massimo 8 foto per prodotto', a_errUrl: 'Il link deve iniziare con http(s)://', a_errType: 'solo JPG, PNG, WEBP, GIF',
     a_errBig: 'supera gli 8MB', a_errLoad: 'Impossibile caricare i dati (hai eseguito supabase.sql?)', a_errPrefix: 'Errore: ',
     a_notConfTitle: 'Non configurato', a_notConfText: 'Apri <code>config.js</code> e inserisci URL e chiave di Supabase.',
+    a_variants: 'Varianti (facoltative)', a_varHint: 'Es. gruppo "Colore" con le opzioni Nero, Bianco, Rosso. Il prezzo extra si somma al prezzo base.',
+    a_addGroup: '+ Aggiungi gruppo (es. Colore)', a_addOpt: '+ opzione', a_gName: 'Nome gruppo (es. Colore)', a_gNameEn: 'Inglese (es. Colour)',
+    a_oLabel: 'Opzione (es. Nero)', a_oLabelEn: 'Inglese (es. Black)', a_oDelta: '+ prezzo €',
+    a_errVar: 'Ogni gruppo ha bisogno di un nome e di almeno un\'opzione; nomi e opzioni non possono ripetersi',
     st_new: 'nuovo', st_confirmed: 'confermato', st_printing: 'in stampa', st_shipped: 'spedito', st_done: 'completato', st_cancelled: 'annullato',
   },
   en: {
@@ -99,6 +103,10 @@ const I18N = {
     a_errMax: 'Max 8 photos per product', a_errUrl: 'Marketplace link must start with http(s)://', a_errType: 'only JPG, PNG, WEBP, GIF',
     a_errBig: 'is bigger than 8MB', a_errLoad: 'Could not load data (did you run supabase.sql?)', a_errPrefix: 'Error: ',
     a_notConfTitle: 'Not configured', a_notConfText: 'Open <code>config.js</code> and add your Supabase URL and key.',
+    a_variants: 'Variants (optional)', a_varHint: 'E.g. a "Colour" group with options Black, White, Red. The extra price is added to the base price.',
+    a_addGroup: '+ Add group (e.g. Colour)', a_addOpt: '+ option', a_gName: 'Group name (e.g. Colour)', a_gNameEn: 'English name',
+    a_oLabel: 'Option (e.g. Black)', a_oLabelEn: 'English label', a_oDelta: '+ price €',
+    a_errVar: 'Each group needs a name and at least one option; names and options must be unique',
     st_new: 'new', st_confirmed: 'confirmed', st_printing: 'printing', st_shipped: 'shipped', st_done: 'done', st_cancelled: 'cancelled',
   },
 };

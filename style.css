@@ -213,3 +213,21 @@ footer.site{border-top:1px solid var(--line);padding:30px 0;color:var(--muted);t
   .logo small{display:none}
   .row2{align-items:end}
 }
+
+/* variants: storefront chips */
+.optgroup{display:flex;flex-direction:column;gap:6px}
+.optgroup .lab{font-size:.82rem;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.06em}
+.opts{display:flex;flex-wrap:wrap;gap:8px}
+.opt{padding:9px 14px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);cursor:pointer;font-weight:600}
+.opt:hover{border-color:var(--accent)}
+.opt.on{border-color:var(--accent);background:rgba(255,106,26,.15)}
+.opt small{color:var(--accent2);margin-left:6px;font-weight:700}
+.optline{color:var(--muted);font-size:.85rem;margin-top:2px}
+/* variants: admin editor */
+.variants{display:flex;flex-direction:column;gap:10px}
+.vgroup{border:1px solid var(--line);border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:8px;background:var(--panel2)}
+.vhead{display:grid;grid-template-columns:1fr 1fr 30px;gap:6px}
+.vopt{display:grid;grid-template-columns:1fr 1fr 72px 30px;gap:6px}
+.vgroup input.f{padding:8px 10px;background:var(--panel)}
+.xbtn{background:rgba(255,77,79,.12);color:var(--bad);border:1px solid rgba(255,77,79,.3);border-radius:8px;cursor:pointer}
+@media(max-width:640px){.vopt{grid-template-columns:1fr 1fr 62px 28px}.vgroup input.f{font-size:16px;padding:8px 6px}}
