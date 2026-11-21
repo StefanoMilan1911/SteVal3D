@@ -49,13 +49,35 @@ async function refresh() {
 
 // ---------- form ----------
 $('#drop').onclick = () => $('#files').click();
-$('#files').onchange = (e) => {
-  for (const f of e.target.files) {
+// Phone photos are huge: shrink to max 1600px and convert to WebP before uploading
+// (≈10x smaller → faster site and the free 1GB storage lasts much longer). GIFs are kept as they are.
+const MAX_SIDE = 1600, MAX_RAW = 30 * 1024 * 1024, MAX_UPLOAD = 8 * 1024 * 1024;
+async function shrink(f) {
+  if (f.type === 'image/gif') return f;
+  try {
+    const bmp = await createImageBitmap(f);
+    const k = Math.min(1, MAX_SIDE / Math.max(bmp.width, bmp.height));
+    const w = Math.round(bmp.width * k), h = Math.round(bmp.height * k);
+    const c = document.createElement('canvas'); c.width = w; c.height = h;
+    c.getContext('2d').drawImage(bmp, 0, 0, w, h);
+    if (bmp.close) bmp.close();
+    const blob = await new Promise((r) => c.toBlob(r, 'image/webp', 0.82));
+    if (!blob || blob.type !== 'image/webp' || blob.size >= f.size) return f; // already small: keep original
+    return new File([blob], f.name.replace(/\.\w+$/, '') + '.webp', { type: 'image/webp' });
+  } catch { return f; }
+}
+
+$('#files').onchange = async (e) => {
+  const picked = [...e.target.files];
+  e.target.value = '';
+  for (const f of picked) {
     if (!EXT[f.type]) { toast(`${f.name}: ${t('a_errType')}`); continue; }
-    if (f.size > 8 * 1024 * 1024) { toast(`${f.name} ${t('a_errBig')}`); continue; }
-    newFiles.push(f);
+    if (f.size > MAX_RAW) { toast(`${f.name} ${t('a_errBig')}`); continue; }
+    const s = await shrink(f);
+    if (s.size > MAX_UPLOAD) { toast(`${f.name} ${t('a_errBig')}`); continue; }
+    newFiles.push(s);
+    renderPreviews();
   }
-  e.target.value = ''; renderPreviews();
 };
 
 function renderPreviews() {
