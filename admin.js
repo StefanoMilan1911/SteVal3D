@@ -34,6 +34,10 @@ $('#loginForm').onsubmit = async (e) => {
 async function start() {
   const { data: { session } } = await sb.auth.getSession();
   if (!session) return showDash(false);
+  // Being logged in is not enough: the account must be listed in the "admins" table
+  const { data: adm } = await sb.from('admins').select('user_id').maybeSingle();
+  if (!adm) { showDash(false); $('#noPerm').hidden = false; return; }
+  $('#noPerm').hidden = true;
   showDash(true); setFormTitle();
   await refresh();
 }

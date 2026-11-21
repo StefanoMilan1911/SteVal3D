@@ -122,7 +122,7 @@ function renderCart() {
   });
 }
 function openCart() { $('#overlay').classList.add('open'); $('#drawer').classList.add('open'); }
-function closeAll() { currentId = null; ['#overlay', '#modal', '#drawer'].forEach((s) => $(s).classList.remove('open')); }
+function closeAll() { currentId = null; ['#overlay', '#modal', '#drawer', '#authModal'].forEach((s) => $(s).classList.remove('open')); }
 
 $('#sendOrder').onclick = async () => {
   const name = $('#oName').value.trim(), email = $('#oEmail').value.trim();
@@ -141,6 +141,128 @@ $('#sendOrder').onclick = async () => {
   toast(t('orderSent'));
 };
 
+// ---------- customer accounts (Supabase Auth) ----------
+let user = null, isAdmin = false, authMode = 'in', authNote = '';
+const firstName = () => (user?.user_metadata?.full_name || '').split(' ')[0] || (user?.email || '').split('@')[0];
+const siteRoot = () => new URL('./', location.href).href;
+
+async function refreshUser() {
+  if (!sb) return;
+  const { data } = await sb.auth.getSession();
+  user = data?.session?.user || null; isAdmin = false;
+  if (user) { const r = await sb.from('admins').select('user_id').maybeSingle(); isAdmin = !!(r && r.data); }
+  updateAccountUI();
+}
+function updateAccountUI() {
+  $('#accLabel').textContent = user ? firstName() : t('account');
+  if (user) { // pre-fill the order form
+    if (!$('#oEmail').value) $('#oEmail').value = user.email || '';
+    if (!$('#oName').value) $('#oName').value = user.user_metadata?.full_name || '';
+  }
+  if ($('#authModal').classList.contains('open')) renderAuth();
+}
+function openAuth() {
+  if (!sb) return toast(t('errNotConn'));
+  if (authMode !== 'recovery') authMode = user ? 'account' : 'in';
+  authNote = ''; renderAuth();
+  $('#overlay').classList.add('open'); $('#authModal').classList.add('open');
+}
+const setNote = (m) => { authNote = m; const el = $('#authMsg'); if (el) { el.textContent = m; el.hidden = !m; } };
+const authMsg = (e) => {
+  const m = (e.message || '').toLowerCase();
+  if (m.includes('invalid login')) return t('authWrong');
+  if (m.includes('already')) return t('authExists');
+  if (m.includes('not confirmed')) return t('authConfirm');
+  if (m.includes('rate limit') || m.includes('too many')) return t('authRate');
+  return t('authErr') + ' ' + (e.message || '');
+};
+const inp = (id, type, ph, extra = '') => `<input class="f" id="${id}" type="${type}" placeholder="${esc(ph)}" ${extra}>`;
+
+function renderAuth() {
+  const b = $('#authBody');
+  const msg = `<div class="msg" id="authMsg" ${authNote ? '' : 'hidden'}>${esc(authNote)}</div>`;
+  const go = (mode) => (btn) => { btn.onclick = () => { authMode = mode; authNote = ''; renderAuth(); }; };
+
+  if (authMode === 'account' && user) {
+    b.innerHTML = `<h2>${esc(t('account'))}</h2>
+      <p style="color:var(--muted)">${esc(t('loggedAs'))} <b style="color:var(--text)">${esc(user.email)}</b></p>${msg}
+      ${isAdmin ? `<a class="btn ghost" href="admin.html">${esc(t('adminPanel'))}</a>` : ''}
+      <h3 style="margin-top:4px">${esc(t('myOrders'))}</h3>
+      <div id="myOrders" class="myorders"><p style="color:var(--muted)">${esc(t('loading'))}</p></div>
+      <button class="btn ghost" id="logoutBtn">${esc(t('logout'))}</button>`;
+    $('#logoutBtn').onclick = async () => {
+      await sb.auth.signOut(); user = null; isAdmin = false; authMode = 'in';
+      updateAccountUI(); closeAll(); toast(t('loggedOut'));
+    };
+    loadMyOrders(); return;
+  }
+  if (authMode === 'recovery') {
+    b.innerHTML = `<h2>${esc(t('titleNewPw'))}</h2><form id="authForm">${inp('aPw', 'password', t('pwPhNew'), 'autocomplete="new-password" required minlength="8"')}
+      <button class="btn primary">${esc(t('savePw'))}</button>${msg}</form>`;
+  } else if (authMode === 'forgot') {
+    b.innerHTML = `<h2>${esc(t('titleForgot'))}</h2><form id="authForm">${inp('aEmail', 'email', t('emailPh').replace(' *', ''), 'autocomplete="email" required')}
+      <button class="btn primary">${esc(t('sendLink'))}</button>${msg}<button type="button" class="linkbtn" id="swBack">${esc(t('backLogin'))}</button></form>`;
+    go('in')($('#swBack'));
+  } else if (authMode === 'up') {
+    b.innerHTML = `<h2>${esc(t('titleUp'))}</h2><form id="authForm">${inp('aName', 'text', t('fullName'), 'autocomplete="name" maxlength="80"')}
+      ${inp('aEmail', 'email', t('emailPh').replace(' *', ''), 'autocomplete="email" required')}${inp('aPw', 'password', t('pwPhNew'), 'autocomplete="new-password" required minlength="8"')}
+      <button class="btn primary">${esc(t('signup'))}</button>${msg}<button type="button" class="linkbtn" id="swIn">${esc(t('haveAccount'))}</button></form>`;
+    go('in')($('#swIn'));
+  } else {
+    b.innerHTML = `<h2>${esc(t('titleIn'))}</h2><form id="authForm">${inp('aEmail', 'email', t('emailPh').replace(' *', ''), 'autocomplete="email" required')}
+      ${inp('aPw', 'password', t('pwPh'), 'autocomplete="current-password" required')}
+      <button class="btn primary">${esc(t('login'))}</button>${msg}
+      <button type="button" class="linkbtn" id="swForgot">${esc(t('forgot'))}</button>
+      <button type="button" class="linkbtn" id="swUp">${esc(t('noAccount'))}</button></form>`;
+    go('forgot')($('#swForgot')); go('up')($('#swUp'));
+  }
+  $('#authForm').onsubmit = async (e) => { e.preventDefault(); await submitAuth(); };
+}
+
+async function submitAuth() {
+  const val = (id) => ($('#' + id) ? $('#' + id).value.trim() : '');
+  const email = val('aEmail'), pw = $('#aPw') ? $('#aPw').value : '';
+  if (authMode === 'in') {
+    const { error } = await sb.auth.signInWithPassword({ email, password: pw });
+    if (error) return setNote(authMsg(error));
+    await refreshUser(); authMode = 'account'; authNote = ''; renderAuth(); toast(t('welcome'));
+  } else if (authMode === 'up') {
+    if (pw.length < 8) return setNote(t('pwShort'));
+    const { data, error } = await sb.auth.signUp({ email, password: pw, options: { data: { full_name: val('aName') }, emailRedirectTo: siteRoot() } });
+    if (error) return setNote(authMsg(error));
+    if (data.user && data.user.identities && data.user.identities.length === 0) return setNote(t('authExists'));
+    if (!data.session) { authMode = 'in'; authNote = t('checkEmail'); return renderAuth(); }
+    await refreshUser(); authMode = 'account'; authNote = ''; renderAuth();
+  } else if (authMode === 'forgot') {
+    const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: siteRoot() });
+    if (error && /rate|too many/i.test(error.message || '')) return setNote(authMsg(error));
+    setNote(t('resetSent'));
+  } else if (authMode === 'recovery') {
+    if (pw.length < 8) return setNote(t('pwShort'));
+    const { error } = await sb.auth.updateUser({ password: pw });
+    if (error) return setNote(authMsg(error));
+    authMode = 'account'; authNote = ''; await refreshUser(); renderAuth(); toast(t('pwUpdated'));
+  }
+}
+
+async function loadMyOrders() {
+  const el = $('#myOrders'); if (!el || !user) return;
+  const { data, error } = await sb.from('orders').select('*').eq('user_id', user.id).order('created_at', { ascending: false });
+  if (error) { el.innerHTML = ''; return; }
+  const loc = LANG === 'it' ? 'it-IT' : 'en-GB';
+  el.innerHTML = data.length ? data.map((o) => `<div class="myorder">
+      <div><b>${eur(o.total)}</b> · <span class="st">${esc(t('st_' + o.status))}</span></div>
+      <div class="meta">${new Date(o.created_at).toLocaleDateString(loc)} — ${(o.items || []).map((i) => `${esc(i.qty)}× ${esc(i.title)}`).join(', ')}</div>
+    </div>`).join('') : `<p style="color:var(--muted)">${esc(t('noMyOrders'))}</p>`;
+}
+
+if (sb) sb.auth.onAuthStateChange((ev) => {
+  if (ev === 'PASSWORD_RECOVERY') { authMode = 'recovery'; setTimeout(openAuth, 0); }
+  setTimeout(refreshUser, 0); // not awaited inside the callback (avoids a Supabase deadlock)
+});
+$('#accBtn').onclick = openAuth;
+$('#authClose').onclick = closeAll;
+
 $('#cartBtn').onclick = openCart;
 $('#drawerClose').onclick = $('#modalClose').onclick = $('#overlay').onclick = closeAll;
 document.addEventListener('keydown', (e) => e.key === 'Escape' && closeAll());
@@ -148,7 +270,7 @@ $('#search').oninput = (e) => { query = e.target.value.toLowerCase(); renderGrid
 
 // re-draw everything when the language changes
 document.addEventListener('langchange', () => {
-  renderChips(); renderGrid(); renderCart();
+  renderChips(); renderGrid(); renderCart(); updateAccountUI();
   if (currentId && $('#modal').classList.contains('open')) openProduct(currentId);
 });
 
@@ -158,4 +280,6 @@ let deferred;
 window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferred = e; $('#installBtn').hidden = false; });
 $('#installBtn').onclick = async () => { if (!deferred) return; deferred.prompt(); await deferred.userChoice; deferred = null; $('#installBtn').hidden = true; };
 
+updateAccountUI();
 load();
+refreshUser();

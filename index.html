@@ -20,6 +20,7 @@
     </nav>
     <div style="display:flex;gap:10px;align-items:center">
       <div class="langsw" role="group" aria-label="Language"><button data-lang="it">IT</button><button data-lang="en">EN</button></div>
+      <button class="btn ghost" id="accBtn">👤 <span id="accLabel"></span></button>
       <button class="btn ghost" id="installBtn" data-i18n="install" hidden>⬇ Installa app</button>
       <button class="btn ghost cart-btn" id="cartBtn">🛒 <span data-i18n="cart">Carrello</span><span class="count" id="cartCount">0</span></button>
     </div>
@@ -50,6 +51,11 @@
 <div class="modal" id="modal" role="dialog" aria-modal="true">
   <button class="close" id="modalClose" aria-label="Close">✕</button>
   <div class="inner" id="modalBody"></div>
+</div>
+
+<div class="modal narrow" id="authModal" role="dialog" aria-modal="true">
+  <button class="close" id="authClose" aria-label="Close">✕</button>
+  <div class="authbody" id="authBody"></div>
 </div>
 
 <aside class="drawer" id="drawer" aria-label="Cart">

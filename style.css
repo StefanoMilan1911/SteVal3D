@@ -141,3 +141,15 @@ footer.site{border-top:1px solid var(--line);padding:30px 0;color:var(--muted);t
 .langsw button.on{background:rgba(255,106,26,.22);color:var(--text)}
 .langsw button:hover{color:var(--text)}
 .info .prices{margin-top:6px}
+
+/* accounts */
+.modal.narrow{width:min(430px,94vw)}
+.authbody{padding:30px 28px;display:flex;flex-direction:column;gap:12px}
+.authbody h2{font-size:1.4rem;letter-spacing:-.02em;padding-right:34px}
+.authbody form{display:flex;flex-direction:column;gap:10px}
+.msg{background:rgba(255,179,71,.1);border:1px solid rgba(255,179,71,.35);color:var(--accent2);border-radius:10px;padding:10px 12px;font-size:.9rem}
+.linkbtn{background:none;border:0;color:var(--accent2);cursor:pointer;text-decoration:underline;font-size:.9rem;text-align:left;padding:0}
+.myorders{display:flex;flex-direction:column;gap:8px;max-height:240px;overflow:auto}
+.myorder{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.myorder .meta{color:var(--muted);font-size:.85rem}
+.myorder .st{color:var(--accent2);font-weight:700}
